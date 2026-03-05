@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Distributed System Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
+        .chart-container { width: 800px; max-width: 100%; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <h1>System Monitor</h1>
+    <div class="chart-container">
+        <canvas id="cpuChart"></canvas>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('cpuChart').getContext('2d');
+        const cpuChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [], // Timestamps go here
+                datasets: [] // Node data goes here (we will create datasets dynamically)
+            },
+            options: {
+                responsive: true,
+                animation: false, // Turn off animation for better performance on live data
+                scales: {
+                    y: { beginAtZero: true, max: 100, title: { display: true, text: 'CPU Load (%)' } }
+                }
+            }
+        });
+
+        const ws = new WebSocket(`ws://${window.location.host}`);
+
+        ws.onmessage = (event) => {
+            const update = JSON.parse(event.data);
+            
+            cpuChart.data.labels.push(update.timestamp);
+
+            if (cpuChart.data.labels.length > 50) {
+                cpuChart.data.labels.shift();
+            }
+
+            update.nodes.forEach((node, index) => {
+                if (!cpuChart.data.datasets[index]) {
+                    cpuChart.data.datasets[index] = {
+                        label: `Rank ${node.rank}`,
+                        data: [],
+                        borderColor: `hsl(${index * 60}, 70%, 50%)`, // Give each rank a unique color
+                        tension: 0.1
+                    };
+                }
+
+                cpuChart.data.datasets[index].data.push(node.cpu_load);
+
+                if (cpuChart.data.datasets[index].data.length > 50) {
+                    cpuChart.data.datasets[index].data.shift();
+                }
+            });
+
+            cpuChart.update();
+        };
+    </script>
+</body>
+</html>
