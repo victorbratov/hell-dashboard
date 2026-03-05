@@ -22,7 +22,7 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 console.log(`Watching file: ${logFilePath}`);
 const tail = new Tail(logFilePath, { fromBeginning: false });
@@ -37,7 +37,7 @@ tail.on('line', (data) => {
 
 tail.on('error', (err) => console.error('Tail error:', err));
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 3000);
 server.listen(PORT, () => {
     console.log(`Dashboard running at http://localhost:${PORT}`);
 });

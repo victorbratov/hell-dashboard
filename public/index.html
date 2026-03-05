@@ -1,67 +1,530 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Distributed System Monitor</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>H.E.L.L. Telemetry Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
-        .chart-container { width: 800px; max-width: 100%; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        :root {
+            --bg: #0b1220;
+            --panel: #111a2d;
+            --panel-soft: #16233b;
+            --line: #23324f;
+            --text: #e5ecff;
+            --muted: #93a2c9;
+            --accent: #f59e0b;
+            --accent-2: #10b981;
+            --accent-3: #38bdf8;
+            --danger: #f97373;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--text);
+            background:
+                radial-gradient(1200px 500px at -5% -10%, #1b2a4d 0%, transparent 60%),
+                radial-gradient(1000px 500px at 110% -20%, #123048 0%, transparent 55%),
+                var(--bg);
+            font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+        }
+
+        .wrap {
+            width: min(1400px, 96vw);
+            margin: 20px auto 28px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+            gap: 12px;
+            background: linear-gradient(140deg, #13213a, #0f1a2f 60%, #0f2532);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 16px 18px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 0.3px;
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--danger);
+            box-shadow: 0 0 12px rgba(249, 115, 115, 0.65);
+        }
+
+        .dot.live {
+            background: var(--accent-2);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(8, minmax(130px, 1fr));
+            gap: 10px;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px 12px;
+        }
+
+        .card .k {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        .card .v {
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(320px, 1fr));
+            gap: 14px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px;
+            min-height: 260px;
+        }
+
+        .panel h3 {
+            margin: 2px 0 10px;
+            font-size: 14px;
+            color: #c4d2f3;
+            font-weight: 650;
+            letter-spacing: 0.2px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 210px !important;
+        }
+
+        .table-panel {
+            background: var(--panel-soft);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        thead th {
+            text-align: left;
+            color: #bfd0fb;
+            font-weight: 600;
+            padding: 8px 6px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        tbody td {
+            padding: 7px 6px;
+            border-bottom: 1px solid rgba(35, 50, 79, 0.6);
+            color: #d4defb;
+        }
+
+        @media (max-width: 1100px) {
+            .cards {
+                grid-template-columns: repeat(3, minmax(120px, 1fr));
+            }
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .cards {
+                grid-template-columns: repeat(2, minmax(120px, 1fr));
+            }
+            .hero {
+                align-items: start;
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
+    <main class="wrap">
+        <section class="hero">
+            <div>
+                <h1 class="title">H.E.L.L. Live Telemetry</h1>
+                <p class="subtitle">Node and stage metrics from <code>metrics/monitor.jsonl</code></p>
+            </div>
+            <div class="status">
+                <span id="socketDot" class="dot"></span>
+                <span id="socketText">Disconnected</span>
+            </div>
+        </section>
 
-    <h1>System Monitor</h1>
-    <div class="chart-container">
-        <canvas id="cpuChart"></canvas>
-    </div>
+        <section class="cards">
+            <div class="card"><div class="k">Timestamp</div><div id="kTimestamp" class="v">-</div></div>
+            <div class="card"><div class="k">Active Ranks</div><div id="kRanks" class="v">0</div></div>
+            <div class="card"><div class="k">Total CPU</div><div id="kCpu" class="v">0%</div></div>
+            <div class="card"><div class="k">Memory RSS</div><div id="kRss" class="v">0 MB</div></div>
+            <div class="card"><div class="k">Items Processed</div><div id="kItems" class="v">0</div></div>
+            <div class="card"><div class="k">Items In / Out</div><div id="kItemFlow" class="v">0 / 0</div></div>
+            <div class="card"><div class="k">Bytes RX / TX</div><div id="kByteFlow" class="v">0 / 0 MB</div></div>
+            <div class="card"><div class="k">MPI Traffic</div><div id="kMpi" class="v">0 MB</div></div>
+        </section>
+
+        <section class="grid">
+            <article class="panel"><h3>CPU Load by Rank (%)</h3><canvas id="cpuChart"></canvas></article>
+            <article class="panel"><h3>RSS Memory by Rank (MB)</h3><canvas id="rssChart"></canvas></article>
+            <article class="panel"><h3>Rank Throughput (items/s)</h3><canvas id="throughputChart"></canvas></article>
+            <article class="panel"><h3>Network Throughput (MB/s, RX + TX)</h3><canvas id="netChart"></canvas></article>
+            <article class="panel"><h3>Timing Breakdown (ms)</h3><canvas id="timingChart"></canvas></article>
+            <article class="panel"><h3>Workers and Queue</h3><canvas id="workersChart"></canvas></article>
+            <article class="panel table-panel" style="grid-column: 1 / -1; min-height: 180px;">
+                <h3>Top Stage Hotspots (Current Snapshot)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Stage</th>
+                            <th>Items Proc</th>
+                            <th>Queue</th>
+                            <th>Workers</th>
+                            <th>Proc ms</th>
+                            <th>Idle ms</th>
+                            <th>MPI Send ms</th>
+                            <th>MPI Recv ms</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hotspotBody"></tbody>
+                </table>
+            </article>
+        </section>
+    </main>
 
     <script>
-        const ctx = document.getElementById('cpuChart').getContext('2d');
-        const cpuChart = new Chart(ctx, {
-            type: 'line',
+        const MAX_POINTS = 120;
+
+        const palette = [
+            "#38bdf8", "#f59e0b", "#10b981", "#f43f5e", "#a78bfa", "#22d3ee", "#84cc16", "#fb7185", "#f97316", "#60a5fa"
+        ];
+
+        const rankState = new Map();
+
+        function formatNumber(v) {
+            return new Intl.NumberFormat().format(Math.round(v));
+        }
+
+        function formatMB(bytes) {
+            return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        }
+
+        function getColor(rank) {
+            return palette[rank % palette.length];
+        }
+
+        function ensureDataset(chart, rank, label, axis = "y") {
+            let ds = chart.data.datasets.find((x) => x.label === label);
+            if (!ds) {
+                ds = {
+                    label,
+                    data: [],
+                    borderColor: getColor(rank),
+                    backgroundColor: getColor(rank) + "55",
+                    borderWidth: 2,
+                    tension: 0.25,
+                    pointRadius: 0,
+                    yAxisID: axis
+                };
+                chart.data.datasets.push(ds);
+            }
+            return ds;
+        }
+
+        function trimChart(chart) {
+            if (chart.data.labels.length > MAX_POINTS) {
+                chart.data.labels.shift();
+                chart.data.datasets.forEach((ds) => ds.data.shift());
+            }
+        }
+
+        function pushPoint(ds, value) {
+            ds.data.push(Number.isFinite(value) ? value : 0);
+        }
+
+        function makeLineChart(id, yTitle, min = 0, max = undefined) {
+            return new Chart(document.getElementById(id).getContext("2d"), {
+                type: "line",
+                data: { labels: [], datasets: [] },
+                options: {
+                    maintainAspectRatio: false,
+                    animation: false,
+                    responsive: true,
+                    interaction: { mode: "index", intersect: false },
+                    plugins: { legend: { labels: { color: "#e2e8ff" } } },
+                    scales: {
+                        x: { ticks: { color: "#9fb0dc", maxRotation: 0 }, grid: { color: "rgba(43,62,97,0.45)" } },
+                        y: {
+                            beginAtZero: true,
+                            min,
+                            max,
+                            ticks: { color: "#9fb0dc" },
+                            grid: { color: "rgba(43,62,97,0.45)" },
+                            title: { display: true, text: yTitle, color: "#b6c6ef" }
+                        }
+                    }
+                }
+            });
+        }
+
+        const cpuChart = makeLineChart("cpuChart", "CPU %", 0, 100);
+        const rssChart = makeLineChart("rssChart", "RSS MB", 0);
+        const throughputChart = makeLineChart("throughputChart", "items/s", 0);
+        const netChart = makeLineChart("netChart", "MB/s", 0);
+
+        const timingChart = new Chart(document.getElementById("timingChart").getContext("2d"), {
+            type: "bar",
             data: {
-                labels: [], // Timestamps go here
-                datasets: [] // Node data goes here (we will create datasets dynamically)
+                labels: ["Processing", "Idle", "MPI Send", "MPI Recv"],
+                datasets: [{
+                    label: "Cluster Total",
+                    data: [0, 0, 0, 0],
+                    backgroundColor: ["#38bdf8", "#f59e0b", "#10b981", "#f43f5e"]
+                }]
             },
             options: {
-                responsive: true,
-                animation: false, // Turn off animation for better performance on live data
+                animation: false,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
                 scales: {
-                    y: { beginAtZero: true, max: 100, title: { display: true, text: 'CPU Load (%)' } }
+                    x: { ticks: { color: "#9fb0dc" }, grid: { color: "rgba(43,62,97,0.45)" } },
+                    y: { beginAtZero: true, ticks: { color: "#9fb0dc" }, grid: { color: "rgba(43,62,97,0.45)" }, title: { display: true, text: "Milliseconds", color: "#b6c6ef" } }
                 }
             }
         });
 
-        const ws = new WebSocket(`ws://${window.location.host}`);
+        const workersChart = new Chart(document.getElementById("workersChart").getContext("2d"), {
+            type: "bar",
+            data: {
+                labels: [],
+                datasets: [
+                    { label: "Active Workers", data: [], backgroundColor: "#22d3ee" },
+                    { label: "Queue Depth", data: [], backgroundColor: "#fb7185" }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: { legend: { labels: { color: "#e2e8ff" } } },
+                scales: {
+                    x: { ticks: { color: "#9fb0dc" }, grid: { color: "rgba(43,62,97,0.45)" } },
+                    y: { beginAtZero: true, ticks: { color: "#9fb0dc" }, grid: { color: "rgba(43,62,97,0.45)" } }
+                }
+            }
+        });
 
-        ws.onmessage = (event) => {
-            const update = JSON.parse(event.data);
-            
-            cpuChart.data.labels.push(update.timestamp);
+        function updateCards(summary) {
+            document.getElementById("kTimestamp").textContent = summary.timestamp || "-";
+            document.getElementById("kRanks").textContent = summary.activeRanks;
+            document.getElementById("kCpu").textContent = `${summary.avgCpu.toFixed(1)}%`;
+            document.getElementById("kRss").textContent = formatMB(summary.totalRss);
+            document.getElementById("kItems").textContent = formatNumber(summary.totalItemsProcessed);
+            document.getElementById("kItemFlow").textContent = `${formatNumber(summary.totalItemsReceived)} / ${formatNumber(summary.totalItemsSent)}`;
+            document.getElementById("kByteFlow").textContent = `${(summary.totalBytesReceived / (1024 * 1024)).toFixed(2)} / ${(summary.totalBytesSent / (1024 * 1024)).toFixed(2)} MB`;
+            document.getElementById("kMpi").textContent = `${(summary.totalMpiBytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
 
-            if (cpuChart.data.labels.length > 50) {
-                cpuChart.data.labels.shift();
+        function updateHotspots(stages) {
+            const body = document.getElementById("hotspotBody");
+            body.innerHTML = "";
+            const top = [...stages].sort((a, b) => (b.processing_time_us + b.mpi_send_time_us + b.mpi_recv_time_us) - (a.processing_time_us + a.mpi_send_time_us + a.mpi_recv_time_us)).slice(0, 8);
+            for (const s of top) {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${s.rank}</td>
+                    <td>${s.stage_id}</td>
+                    <td>${formatNumber(s.items_processed)}</td>
+                    <td>${formatNumber(s.queue_depth)}</td>
+                    <td>${formatNumber(s.active_workers)}</td>
+                    <td>${(s.processing_time_us / 1000).toFixed(1)}</td>
+                    <td>${(s.idle_time_us / 1000).toFixed(1)}</td>
+                    <td>${(s.mpi_send_time_us / 1000).toFixed(1)}</td>
+                    <td>${(s.mpi_recv_time_us / 1000).toFixed(1)}</td>
+                `;
+                body.appendChild(tr);
+            }
+        }
+
+        function updateConnection(connected) {
+            document.getElementById("socketDot").classList.toggle("live", connected);
+            document.getElementById("socketText").textContent = connected ? "Live stream" : "Disconnected";
+        }
+
+        function handleUpdate(update) {
+            const timestamp = update.timestamp;
+            const nodes = Array.isArray(update.nodes) ? update.nodes : [];
+            const activeNodes = nodes.filter((n) => n.hw_threads > 0 || (Array.isArray(n.stages) && n.stages.length > 0));
+
+            cpuChart.data.labels.push(timestamp);
+            rssChart.data.labels.push(timestamp);
+            throughputChart.data.labels.push(timestamp);
+            netChart.data.labels.push(timestamp);
+
+            let totalCpuPct = 0;
+            let totalRss = 0;
+            let totalItemsProcessed = 0;
+            let totalItemsReceived = 0;
+            let totalItemsSent = 0;
+            let totalBytesReceived = 0;
+            let totalBytesSent = 0;
+            let totalMpiBytes = 0;
+            const allStages = [];
+
+            for (const node of activeNodes) {
+                const rank = node.rank;
+                const cpuPct = (node.cpu_load || 0) * 100;
+                const rssMB = (node.rss_bytes || 0) / (1024 * 1024);
+                const stages = Array.isArray(node.stages) ? node.stages : [];
+
+                let stageItemsProc = 0;
+                let stageBytesRx = 0;
+                let stageBytesTx = 0;
+
+                for (const st of stages) {
+                    stageItemsProc += st.items_processed || 0;
+                    stageBytesRx += st.bytes_received || 0;
+                    stageBytesTx += st.bytes_sent || 0;
+                    totalItemsReceived += st.items_received || 0;
+                    totalItemsSent += st.items_sent || 0;
+                    totalBytesReceived += st.bytes_received || 0;
+                    totalBytesSent += st.bytes_sent || 0;
+                    allStages.push({ ...st, rank });
+                }
+
+                const currTimeMs = Date.parse(timestamp);
+                const prev = rankState.get(rank);
+                let itemsPerSec = 0;
+                let netMBps = 0;
+                if (prev && currTimeMs > prev.tsMs) {
+                    const dt = (currTimeMs - prev.tsMs) / 1000;
+                    const dItems = Math.max(0, stageItemsProc - prev.stageItemsProc);
+                    const dBytes = Math.max(0, (stageBytesRx + stageBytesTx) - prev.stageBytesTotal);
+                    itemsPerSec = dItems / dt;
+                    netMBps = (dBytes / (1024 * 1024)) / dt;
+                }
+
+                rankState.set(rank, {
+                    tsMs: currTimeMs,
+                    stageItemsProc,
+                    stageBytesTotal: stageBytesRx + stageBytesTx
+                });
+
+                pushPoint(ensureDataset(cpuChart, rank, `Rank ${rank}`), cpuPct);
+                pushPoint(ensureDataset(rssChart, rank, `Rank ${rank}`), rssMB);
+                pushPoint(ensureDataset(throughputChart, rank, `Rank ${rank}`), itemsPerSec);
+                pushPoint(ensureDataset(netChart, rank, `Rank ${rank}`), netMBps);
+
+                totalCpuPct += cpuPct;
+                totalRss += node.rss_bytes || 0;
+                totalItemsProcessed += stageItemsProc;
+                totalMpiBytes += stageBytesRx + stageBytesTx;
             }
 
-            update.nodes.forEach((node, index) => {
-                if (!cpuChart.data.datasets[index]) {
-                    cpuChart.data.datasets[index] = {
-                        label: `Rank ${node.rank}`,
-                        data: [],
-                        borderColor: `hsl(${index * 60}, 70%, 50%)`, // Give each rank a unique color
-                        tension: 0.1
-                    };
-                }
+            for (const chart of [cpuChart, rssChart, throughputChart, netChart]) {
+                trimChart(chart);
+                chart.update("none");
+            }
 
-                cpuChart.data.datasets[index].data.push(node.cpu_load);
+            const sums = {
+                processing: 0,
+                idle: 0,
+                mpiSend: 0,
+                mpiRecv: 0,
+                workersByRank: new Map(),
+                queueByRank: new Map()
+            };
 
-                if (cpuChart.data.datasets[index].data.length > 50) {
-                    cpuChart.data.datasets[index].data.shift();
-                }
+            for (const st of allStages) {
+                sums.processing += st.processing_time_us || 0;
+                sums.idle += st.idle_time_us || 0;
+                sums.mpiSend += st.mpi_send_time_us || 0;
+                sums.mpiRecv += st.mpi_recv_time_us || 0;
+                sums.workersByRank.set(st.rank, (sums.workersByRank.get(st.rank) || 0) + (st.active_workers || 0));
+                sums.queueByRank.set(st.rank, (sums.queueByRank.get(st.rank) || 0) + (st.queue_depth || 0));
+            }
+
+            timingChart.data.datasets[0].data = [
+                sums.processing / 1000,
+                sums.idle / 1000,
+                sums.mpiSend / 1000,
+                sums.mpiRecv / 1000
+            ];
+            timingChart.update("none");
+
+            const sortedRanks = [...new Set(activeNodes.map((n) => n.rank))].sort((a, b) => a - b);
+            workersChart.data.labels = sortedRanks.map((r) => `Rank ${r}`);
+            workersChart.data.datasets[0].data = sortedRanks.map((r) => sums.workersByRank.get(r) || 0);
+            workersChart.data.datasets[1].data = sortedRanks.map((r) => sums.queueByRank.get(r) || 0);
+            workersChart.update("none");
+
+            updateCards({
+                timestamp,
+                activeRanks: activeNodes.length,
+                avgCpu: activeNodes.length ? totalCpuPct / activeNodes.length : 0,
+                totalRss,
+                totalItemsProcessed,
+                totalItemsReceived,
+                totalItemsSent,
+                totalBytesReceived,
+                totalBytesSent,
+                totalMpiBytes
             });
+            updateHotspots(allStages);
+        }
 
-            cpuChart.update();
+        const ws = new WebSocket(`ws://${window.location.host}`);
+
+        ws.onopen = () => updateConnection(true);
+        ws.onclose = () => updateConnection(false);
+        ws.onerror = () => updateConnection(false);
+
+        ws.onmessage = (event) => {
+            try {
+                handleUpdate(JSON.parse(event.data));
+            } catch (err) {
+                console.error("Bad telemetry line", err);
+            }
         };
     </script>
 </body>
