@@ -5,140 +5,312 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>H.E.L.L. Telemetry Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg: #0b1220;
-            --panel: #111a2d;
-            --panel-soft: #16233b;
-            --line: #23324f;
-            --text: #e5ecff;
-            --muted: #93a2c9;
-            --accent: #f59e0b;
-            --accent-2: #10b981;
-            --accent-3: #38bdf8;
-            --danger: #f97373;
+            --bg: #0a0e1a;
+            --surface: #111827;
+            --surface-2: #1a2236;
+            --border: rgba(99, 130, 191, 0.12);
+            --border-active: rgba(99, 180, 255, 0.35);
+            --text: #e8edf8;
+            --text-muted: #7b8db5;
+            --text-dim: #4e5f83;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.15);
+            --green: #22c55e;
+            --green-glow: rgba(34, 197, 94, 0.25);
+            --amber: #f59e0b;
+            --rose: #f43f5e;
+            --cyan: #06b6d4;
+            --violet: #a78bfa;
+            --radius: 10px;
         }
 
         * {
             box-sizing: border-box;
-        }
-
-        body {
             margin: 0;
-            color: var(--text);
-            background:
-                radial-gradient(1200px 500px at -5% -10%, #1b2a4d 0%, transparent 60%),
-                radial-gradient(1000px 500px at 110% -20%, #123048 0%, transparent 55%),
-                var(--bg);
-            font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+            padding: 0;
         }
 
-        .wrap {
-            width: min(1400px, 96vw);
-            margin: 20px auto 28px;
+        html,
+        body {
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .app {
             display: grid;
+            grid-template-rows: 48px 1fr;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── Top Bar ── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
             gap: 16px;
         }
 
-        .hero {
+        .logo {
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            background: linear-gradient(135deg, var(--accent), var(--cyan));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .topbar-divider {
+            width: 1px;
+            height: 20px;
+            background: var(--border);
+        }
+
+        /* ── Tabs ── */
+        .tabs {
             display: flex;
-            justify-content: space-between;
-            align-items: end;
-            gap: 12px;
-            background: linear-gradient(140deg, #13213a, #0f1a2f 60%, #0f2532);
-            border: 1px solid var(--line);
-            border-radius: 16px;
-            padding: 16px 18px;
+            gap: 2px;
+            height: 100%;
+            align-items: stretch;
         }
 
-        .title {
-            margin: 0;
-            font-size: 24px;
-            letter-spacing: 0.3px;
-        }
-
-        .subtitle {
-            margin: 6px 0 0;
-            color: var(--muted);
-            font-size: 14px;
-        }
-
-        .status {
+        .tab {
             display: flex;
             align-items: center;
-            gap: 8px;
-            color: var(--muted);
+            gap: 6px;
+            padding: 0 16px;
             font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.15s;
         }
 
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 999px;
-            background: var(--danger);
-            box-shadow: 0 0 12px rgba(249, 115, 115, 0.65);
+        .tab:hover {
+            color: var(--text);
         }
 
-        .dot.live {
-            background: var(--accent-2);
-            box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+        .tab.active {
+            color: var(--text);
         }
 
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(8, minmax(130px, 1fr));
-            gap: 10px;
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 8px;
+            right: 8px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 2px 2px 0 0;
         }
 
-        .card {
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 10px 12px;
+        .tab-icon {
+            font-size: 15px;
+            line-height: 1;
         }
 
-        .card .k {
-            color: var(--muted);
-            font-size: 12px;
-            margin-bottom: 6px;
-        }
-
-        .card .v {
-            font-size: 20px;
-            font-weight: 700;
-            line-height: 1.1;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(320px, 1fr));
+        .topbar-right {
+            display: flex;
+            align-items: center;
             gap: 14px;
         }
 
-        .panel {
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            padding: 12px;
-            min-height: 260px;
+        .conn-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--rose);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            transition: all 0.3s;
         }
 
-        .panel h3 {
-            margin: 2px 0 10px;
-            font-size: 14px;
-            color: #c4d2f3;
-            font-weight: 650;
-            letter-spacing: 0.2px;
+        .conn-badge.live {
+            background: rgba(34, 197, 94, 0.08);
+            color: var(--green);
+            border-color: rgba(34, 197, 94, 0.2);
         }
 
-        canvas {
+        .conn-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--rose);
+            transition: background 0.3s;
+        }
+
+        .conn-badge.live .conn-dot {
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green-glow);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .timestamp-display {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Content ── */
+        .content {
+            overflow: hidden;
+            position: relative;
+        }
+
+        .tab-panel {
+            display: none;
+            height: 100%;
+            padding: 14px 16px;
+            overflow: hidden;
+        }
+
+        .tab-panel.active {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* ── KPI Row ── */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .kpi {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .kpi-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 22px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+
+        .kpi-value.accent {
+            color: var(--accent);
+        }
+
+        .kpi-value.green {
+            color: var(--green);
+        }
+
+        .kpi-value.amber {
+            color: var(--amber);
+        }
+
+        .kpi-value.cyan {
+            color: var(--cyan);
+        }
+
+        /* ── Chart Grid ── */
+        .chart-row {
+            display: grid;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .chart-row.two {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .chart-row.three {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .chart-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 14px 10px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .chart-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            flex-shrink: 0;
+        }
+
+        .chart-wrap {
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+
+        .chart-wrap canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100% !important;
-            height: 210px !important;
+            height: 100% !important;
         }
 
-        .table-panel {
-            background: var(--panel-soft);
+        /* ── Table ── */
+        .table-wrap {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            border-radius: var(--radius);
         }
 
         table {
@@ -147,202 +319,464 @@
             font-size: 12px;
         }
 
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
         thead th {
             text-align: left;
-            color: #bfd0fb;
+            color: var(--text-muted);
             font-weight: 600;
-            padding: 8px 6px;
-            border-bottom: 1px solid var(--line);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 8px 10px;
+            background: var(--surface-2);
+            border-bottom: 1px solid var(--border);
         }
 
         tbody td {
-            padding: 7px 6px;
-            border-bottom: 1px solid rgba(35, 50, 79, 0.6);
-            color: #d4defb;
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
         }
 
-        .core-map {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 10px;
+        tbody tr:hover {
+            background: rgba(59, 130, 246, 0.04);
         }
 
-        .core-map-node {
+        /* ── Core Load Map ── */
+        .core-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+            flex: 1;
+            min-height: 0;
+            align-content: start;
+            overflow: hidden;
+        }
+
+        .core-legend {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            grid-column: 1 / -1;
         }
 
-        .core-node-label {
-            width: 60px;
-            font-size: 13px;
-            color: #9fb0dc;
+        .core-legend-label {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
         }
 
-        .core-boxes {
+        .core-legend-bar {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4, #22c55e, #eab308, #f97316, #ef4444);
+        }
+
+        .core-node-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 10px;
             display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
+            flex-direction: column;
+            min-height: 0;
         }
 
-        .core-box {
-            width: 20px;
-            height: 20px;
+        .core-node-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+
+        .core-node-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .core-node-stats {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .core-avg-label {
+            font-size: 11px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-muted);
+        }
+
+        .core-avg-track {
+            width: 60px;
+            height: 5px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+        }
+
+        .core-avg-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+
+        .core-cells {
+            display: grid;
+            gap: 2px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .core-cell {
+            border-radius: 3px;
+            position: relative;
+            cursor: default;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .core-cell-pct {
+            font-size: 8px;
+            font-weight: 700;
+            color: rgba(0, 0, 0, 0.55);
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        .core-tooltip {
+            position: absolute;
+            bottom: calc(100% + 4px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
             border-radius: 4px;
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            transition: background 0.2s ease;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s;
+            z-index: 10;
         }
 
-        @media (max-width: 1100px) {
-            .cards {
-                grid-template-columns: repeat(3, minmax(120px, 1fr));
-            }
-
-            .grid {
-                grid-template-columns: 1fr;
-            }
+        .core-cell:hover .core-tooltip {
+            opacity: 1;
         }
 
-        @media (max-width: 600px) {
-            .cards {
-                grid-template-columns: repeat(2, minmax(120px, 1fr));
-            }
-
-            .hero {
-                align-items: start;
-                flex-direction: column;
-            }
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-dim);
+            font-size: 13px;
+            grid-column: 1 / -1;
         }
     </style>
 </head>
 
 <body>
-    <main class="wrap">
-        <section class="hero">
-            <div>
-                <h1 class="title">H.E.L.L. Live Telemetry</h1>
-                <p class="subtitle">Node and stage metrics from <code>metrics/monitor.jsonl</code></p>
+    <div class="app">
+        <!-- ── Top Bar ── -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <div class="logo">H.E.L.L.</div>
+                <div class="topbar-divider"></div>
+                <nav class="tabs">
+                    <button class="tab active" data-tab="overview">
+                        <span class="tab-icon">📊</span> Overview
+                    </button>
+                    <button class="tab" data-tab="performance">
+                        <span class="tab-icon">⚡</span> Performance
+                    </button>
+                    <button class="tab" data-tab="network">
+                        <span class="tab-icon">🔗</span> Network
+                    </button>
+                    <button class="tab" data-tab="details">
+                        <span class="tab-icon">🔍</span> Details
+                    </button>
+                </nav>
             </div>
-            <div class="status">
-                <span id="socketDot" class="dot"></span>
-                <span id="socketText">Disconnected</span>
+            <div class="topbar-right">
+                <span class="timestamp-display" id="tsDisplay">—</span>
+                <div class="conn-badge" id="connBadge">
+                    <span class="conn-dot"></span>
+                    <span id="connText">Offline</span>
+                </div>
             </div>
-        </section>
+        </header>
 
-        <section class="cards">
-            <div class="card">
-                <div class="k">Timestamp</div>
-                <div id="kTimestamp" class="v">-</div>
-            </div>
-            <div class="card">
-                <div class="k">Active Ranks</div>
-                <div id="kRanks" class="v">0</div>
-            </div>
-            <div class="card">
-                <div class="k">Total CPU</div>
-                <div id="kCpu" class="v">0%</div>
-            </div>
-            <div class="card">
-                <div class="k">Memory RSS</div>
-                <div id="kRss" class="v">0 MB</div>
-            </div>
-            <div class="card">
-                <div class="k">Items Processed</div>
-                <div id="kItems" class="v">0</div>
-            </div>
-            <div class="card">
-                <div class="k">Items In / Out</div>
-                <div id="kItemFlow" class="v">0 / 0</div>
-            </div>
-            <div class="card">
-                <div class="k">Bytes RX / TX</div>
-                <div id="kByteFlow" class="v">0 / 0 MB</div>
-            </div>
-            <div class="card">
-                <div class="k">MPI Traffic</div>
-                <div id="kMpi" class="v">0 MB</div>
-            </div>
-        </section>
+        <!-- ── Content ── -->
+        <main class="content">
 
-        <section class="grid">
-            <article class="panel">
-                <h3>CPU Load by Rank (%)</h3><canvas id="cpuChart"></canvas>
-            </article>
-            <article class="panel">
-                <h3>RSS Memory by Rank (MB)</h3><canvas id="rssChart"></canvas>
-            </article>
-            <article class="panel">
-                <h3>Rank Throughput (items/s)</h3><canvas id="throughputChart"></canvas>
-            </article>
-            <article class="panel">
-                <h3>Network Throughput (MB/s, RX + TX)</h3><canvas id="netChart"></canvas>
-            </article>
-            <article class="panel">
-                <h3>Timing Breakdown (ms)</h3><canvas id="timingChart"></canvas>
-            </article>
-            <article class="panel">
-                <h3>Workers and Queue</h3><canvas id="workersChart"></canvas>
-            </article>
-            <article class="panel" style="grid-column: 1 / -1; min-height: 200px;">
-                <h3>Per-Core Load Map</h3>
-                <div id="coreMap" class="core-map"></div>
-            </article>
-            <article class="panel table-panel" style="grid-column: 1 / -1; min-height: 180px;">
-                <h3>Top Stage Hotspots (Current Snapshot)</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Stage</th>
-                            <th>Items Proc</th>
-                            <th>Queue</th>
-                            <th>Workers</th>
-                            <th>Proc ms</th>
-                            <th>Idle ms</th>
-                            <th>MPI Send ms</th>
-                            <th>MPI Recv ms</th>
-                        </tr>
-                    </thead>
-                    <tbody id="hotspotBody"></tbody>
-                </table>
-            </article>
-        </section>
-    </main>
+            <!-- ═══ OVERVIEW TAB ═══ -->
+            <section class="tab-panel active" id="panel-overview">
+                <div class="kpi-row">
+                    <div class="kpi">
+                        <div class="kpi-label">Active Ranks</div>
+                        <div class="kpi-value accent" id="kRanks">0</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Avg CPU</div>
+                        <div class="kpi-value green" id="kCpu">0%</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Total RSS</div>
+                        <div class="kpi-value cyan" id="kRss">0 MB</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Items Processed</div>
+                        <div class="kpi-value" id="kItems">0</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Items In / Out</div>
+                        <div class="kpi-value" id="kItemFlow">0 / 0</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">MPI Traffic</div>
+                        <div class="kpi-value amber" id="kMpi">0 MB</div>
+                    </div>
+                </div>
+
+                <div class="chart-row two" style="flex:1; min-height:0;">
+                    <div class="chart-panel">
+                        <div class="chart-title">CPU Load by Rank (%)</div>
+                        <div class="chart-wrap"><canvas id="cpuChart"></canvas></div>
+                    </div>
+                    <div class="chart-panel">
+                        <div class="chart-title">RSS Memory by Rank (MB)</div>
+                        <div class="chart-wrap"><canvas id="rssChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══ PERFORMANCE TAB ═══ -->
+            <section class="tab-panel" id="panel-performance">
+                <div class="chart-row two" style="flex:1; min-height:0;">
+                    <div class="chart-panel">
+                        <div class="chart-title">Timing Breakdown — Cluster Total (ms)</div>
+                        <div class="chart-wrap"><canvas id="timingChart"></canvas></div>
+                    </div>
+                    <div class="chart-panel">
+                        <div class="chart-title">Workers & Queue Depth by Rank</div>
+                        <div class="chart-wrap"><canvas id="workersChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="chart-row two" style="flex:1; min-height:0;">
+                    <div class="chart-panel">
+                        <div class="chart-title">Rank Throughput (items/s)</div>
+                        <div class="chart-wrap"><canvas id="throughputChart"></canvas></div>
+                    </div>
+                    <div class="chart-panel">
+                        <div class="chart-title">Per-Core Load Map</div>
+                        <div class="core-grid" id="coreMap">
+                            <div class="core-legend">
+                                <span class="core-legend-label">0%</span>
+                                <div class="core-legend-bar"></div>
+                                <span class="core-legend-label">100%</span>
+                            </div>
+                            <div class="empty-state" id="coreEmpty">No core data yet</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══ NETWORK TAB ═══ -->
+            <section class="tab-panel" id="panel-network">
+                <div class="kpi-row" style="grid-template-columns: repeat(4,1fr);">
+                    <div class="kpi">
+                        <div class="kpi-label">Bytes RX</div>
+                        <div class="kpi-value cyan" id="kBytesRx">0 MB</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Bytes TX</div>
+                        <div class="kpi-value amber" id="kBytesTx">0 MB</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Items Received</div>
+                        <div class="kpi-value" id="kNetItemsRx">0</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="kpi-label">Items Sent</div>
+                        <div class="kpi-value" id="kNetItemsTx">0</div>
+                    </div>
+                </div>
+                <div class="chart-row two" style="flex:1; min-height:0;">
+                    <div class="chart-panel">
+                        <div class="chart-title">Network Throughput by Rank (MB/s)</div>
+                        <div class="chart-wrap"><canvas id="netChart"></canvas></div>
+                    </div>
+                    <div class="chart-panel">
+                        <div class="chart-title">MPI Send vs Recv Time (ms)</div>
+                        <div class="chart-wrap"><canvas id="mpiTimeChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══ DETAILS TAB ═══ -->
+            <section class="tab-panel" id="panel-details">
+                <div class="chart-panel" style="flex:1; min-height:0;">
+                    <div class="chart-title">Stage Hotspots — Current Snapshot</div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Stage</th>
+                                    <th>Items</th>
+                                    <th>Queue</th>
+                                    <th>Workers</th>
+                                    <th>Process (ms)</th>
+                                    <th>Idle (ms)</th>
+                                    <th>MPI Send (ms)</th>
+                                    <th>MPI Recv (ms)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hotspotBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <script>
-        const MAX_POINTS = 120;
+        /* ── Tab switching ── */
+        const tabs = document.querySelectorAll('.tab');
+        const panels = document.querySelectorAll('.tab-panel');
 
+        tabs.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.dataset.tab;
+                tabs.forEach(t => t.classList.remove('active'));
+                panels.forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('panel-' + target).classList.add('active');
+
+                // Chart.js needs a resize trigger when panels become visible
+                requestAnimationFrame(() => {
+                    Object.values(allCharts).forEach(c => c.resize());
+                });
+            });
+        });
+
+        /* ── Constants ── */
+        const MAX_POINTS = 90;
         const palette = [
-            "#38bdf8", "#f59e0b", "#10b981", "#f43f5e", "#a78bfa", "#22d3ee", "#84cc16", "#fb7185", "#f97316", "#60a5fa"
+            '#3b82f6', '#f59e0b', '#22c55e', '#f43f5e', '#a78bfa',
+            '#06b6d4', '#84cc16', '#fb7185', '#f97316', '#60a5fa'
         ];
 
         const rankState = new Map();
 
-        function formatNumber(v) {
-            return new Intl.NumberFormat().format(Math.round(v));
+        function fmt(v) { return new Intl.NumberFormat().format(Math.round(v)); }
+        function fmtMB(b) { return (b / (1024 * 1024)).toFixed(1) + ' MB'; }
+        function getColor(r) { return palette[r % palette.length]; }
+
+        /* ── Chart helpers ── */
+        const chartDefaults = {
+            maintainAspectRatio: false,
+            responsive: true,
+            animation: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    labels: { color: '#9fb5dd', font: { size: 11, family: 'Inter' }, boxWidth: 10, padding: 8 }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#4e5f83', maxRotation: 0, font: { size: 10 }, maxTicksLimit: 8 },
+                    grid: { color: 'rgba(43,62,97,0.25)' }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#4e5f83', font: { size: 10 } },
+                    grid: { color: 'rgba(43,62,97,0.25)' }
+                }
+            }
+        };
+
+        function makeLine(id, yLabel, min = 0, max = undefined) {
+            const opts = structuredClone(chartDefaults);
+            opts.scales.y.min = min;
+            if (max !== undefined) opts.scales.y.max = max;
+            opts.scales.y.title = { display: true, text: yLabel, color: '#7b8db5', font: { size: 11 } };
+            return new Chart(document.getElementById(id).getContext('2d'), {
+                type: 'line', data: { labels: [], datasets: [] }, options: opts
+            });
         }
 
-        function formatMB(bytes) {
-            return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        function makeBar(id, labels, datasets) {
+            const opts = structuredClone(chartDefaults);
+            opts.plugins.legend.display = datasets.length > 1;
+            return new Chart(document.getElementById(id).getContext('2d'), {
+                type: 'bar',
+                data: { labels, datasets },
+                options: opts
+            });
         }
 
-        function getColor(rank) {
-            return palette[rank % palette.length];
-        }
+        /* ── Instantiate charts ── */
+        const cpuChart = makeLine('cpuChart', 'CPU %', 0, 100);
+        const rssChart = makeLine('rssChart', 'MB', 0);
+        const throughputChart = makeLine('throughputChart', 'items/s', 0);
+        const netChart = makeLine('netChart', 'MB/s', 0);
 
-        function ensureDataset(chart, rank, label, axis = "y") {
-            let ds = chart.data.datasets.find((x) => x.label === label);
+        const timingChart = makeBar('timingChart',
+            ['Processing', 'Idle', 'MPI Send', 'MPI Recv'],
+            [{
+                label: 'Cluster Total', data: [0, 0, 0, 0],
+                backgroundColor: ['#3b82f6', '#f59e0b', '#22c55e', '#f43f5e']
+            }]
+        );
+
+        const workersChart = makeBar('workersChart', [],
+            [
+                { label: 'Active Workers', data: [], backgroundColor: '#06b6d4' },
+                { label: 'Queue Depth', data: [], backgroundColor: '#fb7185' }
+            ]
+        );
+
+        const mpiTimeChart = makeBar('mpiTimeChart',
+            ['MPI Send', 'MPI Recv'],
+            [{
+                label: 'Total (ms)', data: [0, 0],
+                backgroundColor: ['#22c55e', '#f43f5e']
+            }]
+        );
+
+        const allCharts = { cpuChart, rssChart, throughputChart, netChart, timingChart, workersChart, mpiTimeChart };
+
+        /* ── Dataset management ── */
+        function ensureDS(chart, rank, label) {
+            let ds = chart.data.datasets.find(x => x.label === label);
             if (!ds) {
                 ds = {
                     label,
                     data: [],
                     borderColor: getColor(rank),
-                    backgroundColor: getColor(rank) + "55",
-                    borderWidth: 2,
-                    tension: 0.25,
+                    backgroundColor: getColor(rank) + '33',
+                    borderWidth: 1.5,
+                    tension: 0.3,
                     pointRadius: 0,
-                    yAxisID: axis
+                    fill: true
                 };
                 chart.data.datasets.push(ds);
             }
@@ -350,282 +784,272 @@
         }
 
         function trimChart(chart) {
-            if (chart.data.labels.length > MAX_POINTS) {
+            while (chart.data.labels.length > MAX_POINTS) {
                 chart.data.labels.shift();
-                chart.data.datasets.forEach((ds) => ds.data.shift());
+                chart.data.datasets.forEach(ds => ds.data.shift());
             }
         }
 
-        function pushPoint(ds, value) {
-            ds.data.push(Number.isFinite(value) ? value : 0);
+        function push(ds, v) { ds.data.push(Number.isFinite(v) ? v : 0); }
+
+        /* ── Connection ── */
+        function updateConn(on) {
+            const b = document.getElementById('connBadge');
+            b.classList.toggle('live', on);
+            document.getElementById('connText').textContent = on ? 'Live' : 'Offline';
         }
 
-        function makeLineChart(id, yTitle, min = 0, max = undefined) {
-            return new Chart(document.getElementById(id).getContext("2d"), {
-                type: "line",
-                data: { labels: [], datasets: [] },
-                options: {
-                    maintainAspectRatio: false,
-                    animation: false,
-                    responsive: true,
-                    interaction: { mode: "index", intersect: false },
-                    plugins: { legend: { labels: { color: "#e2e8ff" } } },
-                    scales: {
-                        x: { ticks: { color: "#9fb0dc", maxRotation: 0 }, grid: { color: "rgba(43,62,97,0.45)" } },
-                        y: {
-                            beginAtZero: true,
-                            min,
-                            max,
-                            ticks: { color: "#9fb0dc" },
-                            grid: { color: "rgba(43,62,97,0.45)" },
-                            title: { display: true, text: yTitle, color: "#b6c6ef" }
-                        }
+        /* ── Core-Load rendering (in-place updates, no DOM rebuild) ── */
+        function coreColor(load) {
+            const stops = [
+                [0.0, [59, 130, 246]],
+                [0.2, [6, 182, 212]],
+                [0.4, [34, 197, 94]],
+                [0.6, [234, 179, 8]],
+                [0.8, [249, 115, 22]],
+                [1.0, [239, 68, 68]]
+            ];
+            const t = Math.max(0, Math.min(1, load));
+            let i = 0;
+            while (i < stops.length - 2 && stops[i + 1][0] < t) i++;
+            const [t0, c0] = stops[i];
+            const [t1, c1] = stops[i + 1];
+            const f = (t1 - t0) > 0 ? (t - t0) / (t1 - t0) : 0;
+            const r = Math.round(c0[0] + (c1[0] - c0[0]) * f);
+            const g = Math.round(c0[1] + (c1[1] - c0[1]) * f);
+            const b = Math.round(c0[2] + (c1[2] - c0[2]) * f);
+            return `rgb(${r},${g},${b})`;
+        }
+
+        // Cache of existing rank card DOM elements for in-place updates
+        const coreCardCache = new Map();
+
+        function renderCores(nodes) {
+            const el = document.getElementById('coreMap');
+            const emptyEl = document.getElementById('coreEmpty');
+
+            const activeRanks = new Set();
+            let hasData = false;
+
+            for (const node of nodes) {
+                const loads = Array.isArray(node.core_loads) ? node.core_loads : [];
+                if (loads.length === 0) continue;
+                hasData = true;
+                activeRanks.add(node.rank);
+
+                const avg = loads.reduce((a, b) => a + b, 0) / loads.length;
+                const pct = (avg * 100).toFixed(0);
+
+                // Near-square grid: cols ≈ sqrt(n)
+                const n = loads.length;
+                const cols = Math.ceil(Math.sqrt(n));
+
+                let cached = coreCardCache.get(node.rank);
+
+                // Create card if it doesn't exist yet or core count changed
+                if (!cached || cached.coreCount !== n) {
+                    if (cached) cached.el.remove();
+
+                    const card = document.createElement('div');
+                    card.className = 'core-node-card';
+                    card.dataset.rank = node.rank;
+
+                    const showPct = cols <= 10;
+                    let cellsHtml = '';
+                    for (let i = 0; i < n; i++) {
+                        cellsHtml += `<div class="core-cell" data-idx="${i}">
+                            ${showPct ? '<span class="core-cell-pct"></span>' : ''}
+                            <div class="core-tooltip"></div>
+                        </div>`;
+                    }
+
+                    card.innerHTML = `
+                        <div class="core-node-header">
+                            <span class="core-node-name">Rank ${node.rank}</span>
+                            <div class="core-node-stats">
+                                <span class="core-avg-label"></span>
+                                <div class="core-avg-track">
+                                    <div class="core-avg-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="core-cells" style="grid-template-columns:repeat(${cols},1fr)">
+                            ${cellsHtml}
+                        </div>
+                    `;
+
+                    el.appendChild(card);
+                    cached = {
+                        el: card,
+                        coreCount: n,
+                        cells: card.querySelectorAll('.core-cell'),
+                        avgLabel: card.querySelector('.core-avg-label'),
+                        avgFill: card.querySelector('.core-avg-fill'),
+                        showPct: showPct
+                    };
+                    coreCardCache.set(node.rank, cached);
+                }
+
+                // In-place update: just change colors and text, no DOM rebuild
+                cached.avgLabel.textContent = pct + '%';
+                cached.avgFill.style.width = pct + '%';
+                cached.avgFill.style.background = coreColor(avg);
+
+                for (let i = 0; i < loads.length; i++) {
+                    const l = loads[i];
+                    const cell = cached.cells[i];
+                    cell.style.background = coreColor(l);
+
+                    const tooltip = cell.querySelector('.core-tooltip');
+                    if (tooltip) tooltip.textContent = `Core ${i}: ${(l * 100).toFixed(1)}%`;
+
+                    if (cached.showPct) {
+                        const pctEl = cell.querySelector('.core-cell-pct');
+                        if (pctEl) pctEl.textContent = (l * 100).toFixed(0);
                     }
                 }
-            });
-        }
+            }
 
-        const cpuChart = makeLineChart("cpuChart", "CPU %", 0, 100);
-        const rssChart = makeLineChart("rssChart", "RSS MB", 0);
-        const throughputChart = makeLineChart("throughputChart", "items/s", 0);
-        const netChart = makeLineChart("netChart", "MB/s", 0);
-
-        const timingChart = new Chart(document.getElementById("timingChart").getContext("2d"), {
-            type: "bar",
-            data: {
-                labels: ["Processing", "Idle", "MPI Send", "MPI Recv"],
-                datasets: [{
-                    label: "Cluster Total",
-                    data: [0, 0, 0, 0],
-                    backgroundColor: ["#38bdf8", "#f59e0b", "#10b981", "#f43f5e"]
-                }]
-            },
-            options: {
-                animation: false,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { ticks: { color: "#9fb0dc" }, grid: { color: "rgba(43,62,97,0.45)" } },
-                    y: { beginAtZero: true, ticks: { color: "#9fb0dc" }, grid: { color: "rgba(43,62,97,0.45)" }, title: { display: true, text: "Milliseconds", color: "#b6c6ef" } }
+            // Remove cards for ranks that are no longer active
+            for (const [rank, cached] of coreCardCache) {
+                if (!activeRanks.has(rank)) {
+                    cached.el.remove();
+                    coreCardCache.delete(rank);
                 }
             }
-        });
 
-        const workersChart = new Chart(document.getElementById("workersChart").getContext("2d"), {
-            type: "bar",
-            data: {
-                labels: [],
-                datasets: [
-                    { label: "Active Workers", data: [], backgroundColor: "#22d3ee" },
-                    { label: "Queue Depth", data: [], backgroundColor: "#fb7185" }
-                ]
-            },
-            options: {
-                maintainAspectRatio: false,
-                animation: false,
-                plugins: { legend: { labels: { color: "#e2e8ff" } } },
-                scales: {
-                    x: { ticks: { color: "#9fb0dc" }, grid: { color: "rgba(43,62,97,0.45)" } },
-                    y: { beginAtZero: true, ticks: { color: "#9fb0dc" }, grid: { color: "rgba(43,62,97,0.45)" } }
-                }
-            }
-        });
-
-        function updateCards(summary) {
-            document.getElementById("kTimestamp").textContent = summary.timestamp || "-";
-            document.getElementById("kRanks").textContent = summary.activeRanks;
-            document.getElementById("kCpu").textContent = `${summary.avgCpu.toFixed(1)}%`;
-            document.getElementById("kRss").textContent = formatMB(summary.totalRss);
-            document.getElementById("kItems").textContent = formatNumber(summary.totalItemsProcessed);
-            document.getElementById("kItemFlow").textContent = `${formatNumber(summary.totalItemsReceived)} / ${formatNumber(summary.totalItemsSent)}`;
-            document.getElementById("kByteFlow").textContent = `${(summary.totalBytesReceived / (1024 * 1024)).toFixed(2)} / ${(summary.totalBytesSent / (1024 * 1024)).toFixed(2)} MB`;
-            document.getElementById("kMpi").textContent = `${(summary.totalMpiBytes / (1024 * 1024)).toFixed(2)} MB`;
+            // Show/hide empty state
+            if (emptyEl) emptyEl.style.display = hasData ? 'none' : '';
         }
 
-        function updateHotspots(stages) {
-            const body = document.getElementById("hotspotBody");
-            body.innerHTML = "";
-            const top = [...stages].sort((a, b) => (b.processing_time_us + b.mpi_send_time_us + b.mpi_recv_time_us) - (a.processing_time_us + a.mpi_send_time_us + a.mpi_recv_time_us)).slice(0, 8);
-            for (const s of top) {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${s.rank}</td>
-                    <td>${s.stage_id}</td>
-                    <td>${formatNumber(s.items_processed)}</td>
-                    <td>${formatNumber(s.queue_depth)}</td>
-                    <td>${formatNumber(s.active_workers)}</td>
-                    <td>${(s.processing_time_us / 1000).toFixed(1)}</td>
-                    <td>${(s.idle_time_us / 1000).toFixed(1)}</td>
-                    <td>${(s.mpi_send_time_us / 1000).toFixed(1)}</td>
-                    <td>${(s.mpi_recv_time_us / 1000).toFixed(1)}</td>
-                `;
-                body.appendChild(tr);
-            }
+        /* ── Hotspot table ── */
+        function renderHotspots(stages) {
+            const body = document.getElementById('hotspotBody');
+            const sorted = [...stages].sort((a, b) =>
+                (b.processing_time_us + b.mpi_send_time_us + b.mpi_recv_time_us) -
+                (a.processing_time_us + a.mpi_send_time_us + a.mpi_recv_time_us)
+            ).slice(0, 12);
+            body.innerHTML = sorted.map(s => `<tr>
+                <td>${s.rank}</td><td>${s.stage_id}</td>
+                <td>${fmt(s.items_processed)}</td><td>${fmt(s.queue_depth)}</td>
+                <td>${fmt(s.active_workers)}</td>
+                <td>${(s.processing_time_us / 1000).toFixed(1)}</td>
+                <td>${(s.idle_time_us / 1000).toFixed(1)}</td>
+                <td>${(s.mpi_send_time_us / 1000).toFixed(1)}</td>
+                <td>${(s.mpi_recv_time_us / 1000).toFixed(1)}</td>
+            </tr>`).join('');
         }
 
-        function updateConnection(connected) {
-            document.getElementById("socketDot").classList.toggle("live", connected);
-            document.getElementById("socketText").textContent = connected ? "Live stream" : "Disconnected";
-        }
-
+        /* ── Main update ── */
         function handleUpdate(update) {
-            const timestamp = update.timestamp;
+            const ts = update.timestamp;
             const nodes = Array.isArray(update.nodes) ? update.nodes : [];
-            const activeNodes = nodes.filter((n) => n.hw_threads > 0 || (Array.isArray(n.stages) && n.stages.length > 0));
+            const active = nodes.filter(n => n.hw_threads > 0 || (Array.isArray(n.stages) && n.stages.length > 0));
 
-            cpuChart.data.labels.push(timestamp);
-            rssChart.data.labels.push(timestamp);
-            throughputChart.data.labels.push(timestamp);
-            netChart.data.labels.push(timestamp);
+            document.getElementById('tsDisplay').textContent = ts || '—';
 
-            let totalCpuPct = 0;
-            let totalRss = 0;
-            let totalItemsProcessed = 0;
-            let totalItemsReceived = 0;
-            let totalItemsSent = 0;
-            let totalBytesReceived = 0;
-            let totalBytesSent = 0;
-            let totalMpiBytes = 0;
+            cpuChart.data.labels.push(ts);
+            rssChart.data.labels.push(ts);
+            throughputChart.data.labels.push(ts);
+            netChart.data.labels.push(ts);
+
+            let totCpu = 0, totRss = 0, totProc = 0, totRx = 0, totTx = 0;
+            let totItemsProc = 0, totItemsRx = 0, totItemsTx = 0;
+            let totMpiSend = 0, totMpiRecv = 0;
             const allStages = [];
-            const coreMapHtml = [];
 
-            for (const node of activeNodes) {
-                const rank = node.rank;
+            for (const node of active) {
+                const r = node.rank;
                 const cpuPct = (node.cpu_load || 0) * 100;
                 const rssMB = (node.rss_bytes || 0) / (1024 * 1024);
                 const stages = Array.isArray(node.stages) ? node.stages : [];
 
-                let stageItemsProc = 0;
-                let stageBytesRx = 0;
-                let stageBytesTx = 0;
-
+                let sProc = 0, sRx = 0, sTx = 0;
                 for (const st of stages) {
-                    stageItemsProc += st.items_processed || 0;
-                    stageBytesRx += st.bytes_received || 0;
-                    stageBytesTx += st.bytes_sent || 0;
-                    totalItemsReceived += st.items_received || 0;
-                    totalItemsSent += st.items_sent || 0;
-                    totalBytesReceived += st.bytes_received || 0;
-                    totalBytesSent += st.bytes_sent || 0;
-                    allStages.push({ ...st, rank });
+                    sProc += st.items_processed || 0;
+                    sRx += st.bytes_received || 0;
+                    sTx += st.bytes_sent || 0;
+                    totItemsRx += st.items_received || 0;
+                    totItemsTx += st.items_sent || 0;
+                    totRx += st.bytes_received || 0;
+                    totTx += st.bytes_sent || 0;
+                    totMpiSend += st.mpi_send_time_us || 0;
+                    totMpiRecv += st.mpi_recv_time_us || 0;
+                    allStages.push({ ...st, rank: r });
                 }
 
-                const currTimeMs = Date.parse(timestamp);
-                const prev = rankState.get(rank);
-                let itemsPerSec = 0;
-                let netMBps = 0;
-                if (prev && currTimeMs > prev.tsMs) {
-                    const dt = (currTimeMs - prev.tsMs) / 1000;
-                    const dItems = Math.max(0, stageItemsProc - prev.stageItemsProc);
-                    const dBytes = Math.max(0, (stageBytesRx + stageBytesTx) - prev.stageBytesTotal);
-                    itemsPerSec = dItems / dt;
-                    netMBps = (dBytes / (1024 * 1024)) / dt;
+                const now = Date.parse(ts);
+                const prev = rankState.get(r);
+                let ips = 0, mbps = 0;
+                if (prev && now > prev.t) {
+                    const dt = (now - prev.t) / 1000;
+                    ips = Math.max(0, sProc - prev.p) / dt;
+                    mbps = Math.max(0, (sRx + sTx) - prev.b) / (1024 * 1024) / dt;
                 }
+                rankState.set(r, { t: now, p: sProc, b: sRx + sTx });
 
-                rankState.set(rank, {
-                    tsMs: currTimeMs,
-                    stageItemsProc,
-                    stageBytesTotal: stageBytesRx + stageBytesTx
-                });
+                push(ensureDS(cpuChart, r, `R${r}`), cpuPct);
+                push(ensureDS(rssChart, r, `R${r}`), rssMB);
+                push(ensureDS(throughputChart, r, `R${r}`), ips);
+                push(ensureDS(netChart, r, `R${r}`), mbps);
 
-                const coreLoads = Array.isArray(node.core_loads) ? node.core_loads : [];
-                if (coreLoads.length > 0) {
-                    let boxesHtml = '';
-                    for (const load of coreLoads) {
-                        const hue = Math.max(0, 240 * (1.0 - load));
-                        boxesHtml += `<div class="core-box" style="background: hsl(${hue}, 80%, 50%)" title="Load: ${(load * 100).toFixed(1)}%"></div>`;
-                    }
-                    coreMapHtml.push(`
-                        <div class="core-map-node">
-                            <div class="core-node-label">Rank ${rank}</div>
-                            <div class="core-boxes">${boxesHtml}</div>
-                        </div>
-                    `);
-                }
-
-                pushPoint(ensureDataset(cpuChart, rank, `Rank ${rank}`), cpuPct);
-                pushPoint(ensureDataset(rssChart, rank, `Rank ${rank}`), rssMB);
-                pushPoint(ensureDataset(throughputChart, rank, `Rank ${rank}`), itemsPerSec);
-                pushPoint(ensureDataset(netChart, rank, `Rank ${rank}`), netMBps);
-
-                totalCpuPct += cpuPct;
-                totalRss += node.rss_bytes || 0;
-                totalItemsProcessed += stageItemsProc;
-                totalMpiBytes += stageBytesRx + stageBytesTx;
+                totCpu += cpuPct;
+                totRss += node.rss_bytes || 0;
+                totItemsProc += sProc;
+                totProc += sRx + sTx;
             }
 
-            for (const chart of [cpuChart, rssChart, throughputChart, netChart]) {
-                trimChart(chart);
-                chart.update("none");
-            }
+            [cpuChart, rssChart, throughputChart, netChart].forEach(c => { trimChart(c); c.update('none'); });
 
-            const sums = {
-                processing: 0,
-                idle: 0,
-                mpiSend: 0,
-                mpiRecv: 0,
-                workersByRank: new Map(),
-                queueByRank: new Map()
-            };
-
+            /* Timing breakdown */
+            const sums = { proc: 0, idle: 0, send: 0, recv: 0, wByR: new Map(), qByR: new Map() };
             for (const st of allStages) {
-                sums.processing += st.processing_time_us || 0;
+                sums.proc += st.processing_time_us || 0;
                 sums.idle += st.idle_time_us || 0;
-                sums.mpiSend += st.mpi_send_time_us || 0;
-                sums.mpiRecv += st.mpi_recv_time_us || 0;
-                sums.workersByRank.set(st.rank, (sums.workersByRank.get(st.rank) || 0) + (st.active_workers || 0));
-                sums.queueByRank.set(st.rank, (sums.queueByRank.get(st.rank) || 0) + (st.queue_depth || 0));
+                sums.send += st.mpi_send_time_us || 0;
+                sums.recv += st.mpi_recv_time_us || 0;
+                sums.wByR.set(st.rank, (sums.wByR.get(st.rank) || 0) + (st.active_workers || 0));
+                sums.qByR.set(st.rank, (sums.qByR.get(st.rank) || 0) + (st.queue_depth || 0));
             }
 
-            timingChart.data.datasets[0].data = [
-                sums.processing / 1000,
-                sums.idle / 1000,
-                sums.mpiSend / 1000,
-                sums.mpiRecv / 1000
-            ];
-            timingChart.update("none");
+            timingChart.data.datasets[0].data = [sums.proc / 1000, sums.idle / 1000, sums.send / 1000, sums.recv / 1000];
+            timingChart.update('none');
 
-            const sortedRanks = [...new Set(activeNodes.map((n) => n.rank))].sort((a, b) => a - b);
-            workersChart.data.labels = sortedRanks.map((r) => `Rank ${r}`);
-            workersChart.data.datasets[0].data = sortedRanks.map((r) => sums.workersByRank.get(r) || 0);
-            workersChart.data.datasets[1].data = sortedRanks.map((r) => sums.queueByRank.get(r) || 0);
-            workersChart.update("none");
+            const ranks = [...new Set(active.map(n => n.rank))].sort((a, b) => a - b);
+            workersChart.data.labels = ranks.map(r => `R${r}`);
+            workersChart.data.datasets[0].data = ranks.map(r => sums.wByR.get(r) || 0);
+            workersChart.data.datasets[1].data = ranks.map(r => sums.qByR.get(r) || 0);
+            workersChart.update('none');
 
-            const coreMapEl = document.getElementById("coreMap");
-            if (coreMapEl && coreMapHtml.length > 0) {
-                coreMapEl.innerHTML = coreMapHtml.join("");
-            } else if (coreMapEl) {
-                coreMapEl.innerHTML = "<div style='color: var(--muted); font-size: 13px;'>No core load data available</div>";
-            }
+            mpiTimeChart.data.datasets[0].data = [totMpiSend / 1000, totMpiRecv / 1000];
+            mpiTimeChart.update('none');
 
-            updateCards({
-                timestamp,
-                activeRanks: activeNodes.length,
-                avgCpu: activeNodes.length ? totalCpuPct / activeNodes.length : 0,
-                totalRss,
-                totalItemsProcessed,
-                totalItemsReceived,
-                totalItemsSent,
-                totalBytesReceived,
-                totalBytesSent,
-                totalMpiBytes
-            });
-            updateHotspots(allStages);
+            /* KPIs */
+            document.getElementById('kRanks').textContent = active.length;
+            document.getElementById('kCpu').textContent = (active.length ? totCpu / active.length : 0).toFixed(1) + '%';
+            document.getElementById('kRss').textContent = fmtMB(totRss);
+            document.getElementById('kItems').textContent = fmt(totItemsProc);
+            document.getElementById('kItemFlow').textContent = fmt(totItemsRx) + ' / ' + fmt(totItemsTx);
+            document.getElementById('kMpi').textContent = fmtMB(totProc);
+
+            /* Network KPIs */
+            document.getElementById('kBytesRx').textContent = fmtMB(totRx);
+            document.getElementById('kBytesTx').textContent = fmtMB(totTx);
+            document.getElementById('kNetItemsRx').textContent = fmt(totItemsRx);
+            document.getElementById('kNetItemsTx').textContent = fmt(totItemsTx);
+
+            renderCores(active);
+            renderHotspots(allStages);
         }
 
+        /* ── WebSocket ── */
         const ws = new WebSocket(`ws://${window.location.host}`);
-
-        ws.onopen = () => updateConnection(true);
-        ws.onclose = () => updateConnection(false);
-        ws.onerror = () => updateConnection(false);
-
-        ws.onmessage = (event) => {
-            try {
-                handleUpdate(JSON.parse(event.data));
-            } catch (err) {
-                console.error("Bad telemetry line", err);
-                console.error("Data was: ", event.data);
-            }
+        ws.onopen = () => updateConn(true);
+        ws.onclose = () => updateConn(false);
+        ws.onerror = () => updateConn(false);
+        ws.onmessage = (ev) => {
+            try { handleUpdate(JSON.parse(ev.data)); }
+            catch (e) { console.error('Bad telemetry line', e, ev.data); }
         };
     </script>
 </body>

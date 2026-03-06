@@ -1,22 +1,8 @@
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
-const { Tail } = require('tail');
+const dgram = require('dgram');
 const path = require('path');
-const fs = require('fs');
-
-if (process.argv.length < 3) {
-    console.error("Usage: node server.js <path_to_monitor.jsonl>");
-    process.exit(1);
-}
-
-const logFilePath = path.resolve(process.argv[2]);
-
-if (!fs.existsSync(logFilePath)) {
-    console.error(`Error: File not found at ${logFilePath}`);
-    console.error("Please make sure your C++ program has created the file.");
-    process.exit(1);
-}
 
 const app = express();
 const server = http.createServer(app);
@@ -24,18 +10,26 @@ const wss = new WebSocket.Server({ server });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-console.log(`Watching file: ${logFilePath}`);
-const tail = new Tail(logFilePath, { fromBeginning: false });
+const TELEMETRY_PORT = Number(process.env.TELEMETRY_PORT || 9100);
+const udpServer = dgram.createSocket('udp4');
 
-tail.on('line', (data) => {
+udpServer.on('message', (msg) => {
+    const line = msg.toString();
     wss.clients.forEach((client) => {
         if (client.readyState === WebSocket.OPEN) {
-            client.send(data);
+            client.send(line);
         }
     });
 });
 
-tail.on('error', (err) => console.error('Tail error:', err));
+udpServer.on('error', (err) => {
+    console.error('UDP error:', err);
+    udpServer.close();
+});
+
+udpServer.bind(TELEMETRY_PORT, '127.0.0.1', () => {
+    console.log(`Listening for telemetry on UDP port ${TELEMETRY_PORT}`);
+});
 
 const PORT = Number(process.env.PORT || 3000);
 server.listen(PORT, () => {
