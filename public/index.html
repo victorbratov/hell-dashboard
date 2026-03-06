@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -160,10 +161,44 @@
             color: #d4defb;
         }
 
+        .core-map {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .core-map-node {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .core-node-label {
+            width: 60px;
+            font-size: 13px;
+            color: #9fb0dc;
+        }
+
+        .core-boxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .core-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            transition: background 0.2s ease;
+        }
+
         @media (max-width: 1100px) {
             .cards {
                 grid-template-columns: repeat(3, minmax(120px, 1fr));
             }
+
             .grid {
                 grid-template-columns: 1fr;
             }
@@ -173,6 +208,7 @@
             .cards {
                 grid-template-columns: repeat(2, minmax(120px, 1fr));
             }
+
             .hero {
                 align-items: start;
                 flex-direction: column;
@@ -180,6 +216,7 @@
         }
     </style>
 </head>
+
 <body>
     <main class="wrap">
         <section class="hero">
@@ -194,23 +231,63 @@
         </section>
 
         <section class="cards">
-            <div class="card"><div class="k">Timestamp</div><div id="kTimestamp" class="v">-</div></div>
-            <div class="card"><div class="k">Active Ranks</div><div id="kRanks" class="v">0</div></div>
-            <div class="card"><div class="k">Total CPU</div><div id="kCpu" class="v">0%</div></div>
-            <div class="card"><div class="k">Memory RSS</div><div id="kRss" class="v">0 MB</div></div>
-            <div class="card"><div class="k">Items Processed</div><div id="kItems" class="v">0</div></div>
-            <div class="card"><div class="k">Items In / Out</div><div id="kItemFlow" class="v">0 / 0</div></div>
-            <div class="card"><div class="k">Bytes RX / TX</div><div id="kByteFlow" class="v">0 / 0 MB</div></div>
-            <div class="card"><div class="k">MPI Traffic</div><div id="kMpi" class="v">0 MB</div></div>
+            <div class="card">
+                <div class="k">Timestamp</div>
+                <div id="kTimestamp" class="v">-</div>
+            </div>
+            <div class="card">
+                <div class="k">Active Ranks</div>
+                <div id="kRanks" class="v">0</div>
+            </div>
+            <div class="card">
+                <div class="k">Total CPU</div>
+                <div id="kCpu" class="v">0%</div>
+            </div>
+            <div class="card">
+                <div class="k">Memory RSS</div>
+                <div id="kRss" class="v">0 MB</div>
+            </div>
+            <div class="card">
+                <div class="k">Items Processed</div>
+                <div id="kItems" class="v">0</div>
+            </div>
+            <div class="card">
+                <div class="k">Items In / Out</div>
+                <div id="kItemFlow" class="v">0 / 0</div>
+            </div>
+            <div class="card">
+                <div class="k">Bytes RX / TX</div>
+                <div id="kByteFlow" class="v">0 / 0 MB</div>
+            </div>
+            <div class="card">
+                <div class="k">MPI Traffic</div>
+                <div id="kMpi" class="v">0 MB</div>
+            </div>
         </section>
 
         <section class="grid">
-            <article class="panel"><h3>CPU Load by Rank (%)</h3><canvas id="cpuChart"></canvas></article>
-            <article class="panel"><h3>RSS Memory by Rank (MB)</h3><canvas id="rssChart"></canvas></article>
-            <article class="panel"><h3>Rank Throughput (items/s)</h3><canvas id="throughputChart"></canvas></article>
-            <article class="panel"><h3>Network Throughput (MB/s, RX + TX)</h3><canvas id="netChart"></canvas></article>
-            <article class="panel"><h3>Timing Breakdown (ms)</h3><canvas id="timingChart"></canvas></article>
-            <article class="panel"><h3>Workers and Queue</h3><canvas id="workersChart"></canvas></article>
+            <article class="panel">
+                <h3>CPU Load by Rank (%)</h3><canvas id="cpuChart"></canvas>
+            </article>
+            <article class="panel">
+                <h3>RSS Memory by Rank (MB)</h3><canvas id="rssChart"></canvas>
+            </article>
+            <article class="panel">
+                <h3>Rank Throughput (items/s)</h3><canvas id="throughputChart"></canvas>
+            </article>
+            <article class="panel">
+                <h3>Network Throughput (MB/s, RX + TX)</h3><canvas id="netChart"></canvas>
+            </article>
+            <article class="panel">
+                <h3>Timing Breakdown (ms)</h3><canvas id="timingChart"></canvas>
+            </article>
+            <article class="panel">
+                <h3>Workers and Queue</h3><canvas id="workersChart"></canvas>
+            </article>
+            <article class="panel" style="grid-column: 1 / -1; min-height: 200px;">
+                <h3>Per-Core Load Map</h3>
+                <div id="coreMap" class="core-map"></div>
+            </article>
             <article class="panel table-panel" style="grid-column: 1 / -1; min-height: 180px;">
                 <h3>Top Stage Hotspots (Current Snapshot)</h3>
                 <table>
@@ -410,6 +487,7 @@
             let totalBytesSent = 0;
             let totalMpiBytes = 0;
             const allStages = [];
+            const coreMapHtml = [];
 
             for (const node of activeNodes) {
                 const rank = node.rank;
@@ -449,6 +527,21 @@
                     stageItemsProc,
                     stageBytesTotal: stageBytesRx + stageBytesTx
                 });
+
+                const coreLoads = Array.isArray(node.core_loads) ? node.core_loads : [];
+                if (coreLoads.length > 0) {
+                    let boxesHtml = '';
+                    for (const load of coreLoads) {
+                        const hue = Math.max(0, 240 * (1.0 - load));
+                        boxesHtml += `<div class="core-box" style="background: hsl(${hue}, 80%, 50%)" title="Load: ${(load * 100).toFixed(1)}%"></div>`;
+                    }
+                    coreMapHtml.push(`
+                        <div class="core-map-node">
+                            <div class="core-node-label">Rank ${rank}</div>
+                            <div class="core-boxes">${boxesHtml}</div>
+                        </div>
+                    `);
+                }
 
                 pushPoint(ensureDataset(cpuChart, rank, `Rank ${rank}`), cpuPct);
                 pushPoint(ensureDataset(rssChart, rank, `Rank ${rank}`), rssMB);
@@ -498,6 +591,13 @@
             workersChart.data.datasets[1].data = sortedRanks.map((r) => sums.queueByRank.get(r) || 0);
             workersChart.update("none");
 
+            const coreMapEl = document.getElementById("coreMap");
+            if (coreMapEl && coreMapHtml.length > 0) {
+                coreMapEl.innerHTML = coreMapHtml.join("");
+            } else if (coreMapEl) {
+                coreMapEl.innerHTML = "<div style='color: var(--muted); font-size: 13px;'>No core load data available</div>";
+            }
+
             updateCards({
                 timestamp,
                 activeRanks: activeNodes.length,
@@ -524,8 +624,10 @@
                 handleUpdate(JSON.parse(event.data));
             } catch (err) {
                 console.error("Bad telemetry line", err);
+                console.error("Data was: ", event.data);
             }
         };
     </script>
 </body>
+
 </html>
