@@ -27,7 +27,7 @@ udpServer.on('error', (err) => {
     udpServer.close();
 });
 
-udpServer.bind(TELEMETRY_PORT, '127.0.0.1', () => {
+udpServer.bind(TELEMETRY_PORT, '0.0.0.0', () => {
     console.log(`Listening for telemetry on UDP port ${TELEMETRY_PORT}`);
 });
 
