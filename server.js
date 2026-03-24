@@ -10,7 +10,7 @@ const wss = new WebSocket.Server({ server });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-const TELEMETRY_PORT = Number(process.env.TELEMETRY_PORT || 9100);
+const TELEMETRY_PORT = Number(process.env.HELL_TELEMETRY_PORT || 9100);
 const udpServer = dgram.createSocket('udp4');
 
 udpServer.on('message', (msg) => {
